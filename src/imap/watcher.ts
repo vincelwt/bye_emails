@@ -293,11 +293,10 @@ export class ImapWatcher {
     const lock = await this.client.getMailboxLock(this.account.mailbox);
     try {
       if (this.isGmail) {
-        // Gmail: remove \\Inbox label to archive
-        await this.client.messageFlagsRemove(String(uid), ["\\Inbox"], {
+        // Gmail: move to All Mail = archive (removes from Inbox)
+        await this.client.messageMove(String(uid), "[Gmail]/All Mail", {
           uid: true,
-          useLabels: true,
-        } as any);
+        });
       } else {
         // Non-Gmail: move to Archive/Archives folder
         try {
