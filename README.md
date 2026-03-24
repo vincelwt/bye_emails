@@ -1,153 +1,139 @@
 # bye_emails
 
-An AI-powered email automation agent that triages your inbox, sends notifications to Telegram, and takes action — so you never have to manually manage emails again.
+A micro agent that watches your inbox so you don't have to. Important stuff goes straight to your Telegram — everything else is archived automatically.
 
-## What it does
+```
+New email arrives → AI classifies it → Telegram notification → Auto-archived
+                                              ↓
+                          OTP codes extracted, travel added to calendar,
+                          newsletters summarized, spam silently archived
+```
 
-- **Monitors your email** in real-time via IMAP IDLE (push-based, low latency)
-- **Classifies emails** using an LLM with your custom rules (natural language)
-- **Takes action** automatically based on classification:
-  - **Spam/notifications** — notify + auto-archive
-  - **Newsletters** — summarize key points + auto-archive
-  - **Security codes** — extract OTP/links, notify instantly + auto-archive
-  - **Travel bookings** — add to calendar (CalDAV) + auto-archive
-  - **Important emails** — notify with archive button, keep in inbox
-- **Completely stateless** — uses Gmail labels (or IMAP flags) to track processed emails
-- **Multi-account** — monitor multiple email accounts simultaneously
-- **Extensible** — plugin system for custom actions, channel system for notification targets
+## Why
+
+Email is a todo list that anyone can add to. Most of it doesn't need you. OTP codes, newsletters, booking confirmations, notifications — they just need to be acknowledged and archived.
+
+bye_emails connects to your inbox via IMAP, classifies every incoming email with an LLM, and handles it based on rules you define in plain English. You get a Telegram message with just the important bits. Your inbox stays empty.
+
+## Features
+
+- **Real-time** — IMAP IDLE (push, not polling). OTP codes arrive in Telegram within seconds
+- **Smart triage** — LLM classifies emails using your natural language rules
+- **OTP extraction** — security codes and action links pulled out and sent directly
+- **Newsletter summaries** — financial newsletters broken down by company with bull/bear thesis
+- **Travel to calendar** — flights, hotels, trains auto-added via CalDAV (iCloud, Google, Nextcloud). Handles multi-leg flights, timezones, and booking updates without creating duplicates
+- **Attachments forwarded** — email attachments sent to Telegram alongside notifications
+- **Action buttons** — important emails get "Open email" + "Archive" buttons in Telegram
+- **Multi-account** — monitor as many inboxes as you want
+- **Stateless** — no database. Uses Gmail labels / IMAP flags to track what's processed
+- **Extensible** — plugin system for actions, channel system for notification targets
 
 ## Quick start
 
-### Prerequisites
+### You'll need
 
-- [Bun](https://bun.sh) runtime
-- A Telegram bot (create one via [@BotFather](https://t.me/botfather))
-- An Anthropic API key or Claude OAuth token
-- Gmail App Password (or IMAP credentials for your provider)
+- [Bun](https://bun.sh)
+- A [Telegram bot](https://t.me/botfather)
+- An [Anthropic API key](https://console.anthropic.com/)
+- A Gmail [App Password](https://myaccount.google.com/apppasswords) (or any IMAP credentials)
 
-### 1. Clone and install
+### Setup
 
 ```bash
-git clone https://github.com/your-username/bye_emails.git
+git clone https://github.com/vincelwt/bye_emails.git
 cd bye_emails
 bun install
-```
-
-### 2. Set up Gmail App Password
-
-1. Go to [Google Account Security](https://myaccount.google.com/security)
-2. Enable 2-Factor Authentication if not already enabled
-3. Go to [App Passwords](https://myaccount.google.com/apppasswords)
-4. Create an app password for "Mail"
-5. Copy the 16-character password
-
-### 3. Set up Telegram Bot
-
-1. Open Telegram and message [@BotFather](https://t.me/botfather)
-2. Send `/newbot` and follow the prompts
-3. Copy the bot token
-4. To get your chat ID:
-   - Send a message to your bot
-   - Visit `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-   - Find your `chat.id` in the response
-
-### 4. Configure
-
-```bash
 cp config.example.yaml config.yaml
 ```
 
-Edit `config.yaml` with your rules. See the example file for all options.
-
-Create a `.env` file:
+Create a `.env`:
 
 ```env
-# LLM
-ANTHROPIC_OAUTH_TOKEN=your_token_here
-
-# Gmail
+ANTHROPIC_OAUTH_TOKEN=sk-ant-...
 GMAIL_USER=you@gmail.com
 GMAIL_APP_PASSWORD=abcd-efgh-ijkl-mnop
-
-# Telegram
-TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 TELEGRAM_CHAT_ID=123456789
-
-# CalDAV (optional)
-CALDAV_USERNAME=your_apple_id@icloud.com
-CALDAV_PASSWORD=abcd-efgh-ijkl-mnop
 ```
 
-### 5. Run
+> **Telegram chat ID**: message your bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to find it.
+
+### Run
 
 ```bash
 bun run start
 ```
 
-Or with watch mode for development:
-
-```bash
-bun run dev
-```
-
 ## Configuration
 
-All behavior is defined in `config.yaml`. Here's what you can configure:
-
-### LLM
-
-```yaml
-llm:
-  provider: anthropic
-  model: claude-haiku-4-5-20251001       # fast triage
-  summarize_model: claude-sonnet-4-6     # detailed summaries
-  api_key_env: ANTHROPIC_OAUTH_TOKEN
-```
-
-### Email accounts
-
-```yaml
-accounts:
-  - name: personal
-    host: imap.gmail.com
-    port: 993
-    secure: true
-    auth:
-      user_env: GMAIL_USER
-      pass_env: GMAIL_APP_PASSWORD
-    mailbox: INBOX
-    processed_label: bye_emails/processed  # Gmail label for tracking
-```
-
-### Rules
-
-Rules are defined in natural language. The LLM uses these descriptions to classify incoming emails:
+Everything lives in `config.yaml`. Rules are plain English — the LLM uses them directly to classify emails.
 
 ```yaml
 rules:
   - name: security
     description: >
       OTP codes, login verification, 2FA codes, password reset links,
-      security alerts, login notifications from services.
+      security alerts, login notifications.
     action: extract_and_archive
-    notify_template: security
+
+  - name: newsletters
+    description: >
+      Newsletters, especially financial ones. Investment analysis,
+      market commentary, stock picks.
+    action: summarize_and_archive
+
+  - name: spam-like
+    description: >
+      Marketing, promotions, social notifications, automated emails
+      that don't need action.
+    action: notify_and_archive
+
+  - name: travel
+    description: >
+      Flight confirmations, hotel reservations, train tickets,
+      booking modifications.
+    action: calendar_and_archive
+
+  - name: needs_attention
+    description: >
+      Emails from real people needing a response, important business
+      emails, anything requiring direct action.
+    action: notify_keep
 ```
 
-Available actions:
+### Actions
 
-| Action | Behavior |
-|--------|----------|
-| `notify_and_archive` | Short notification + archive |
-| `summarize_and_archive` | Detailed summary (uses smarter model) + archive |
-| `extract_and_archive` | Extract OTP/links + archive |
-| `calendar_and_archive` | Add to calendar + archive |
-| `notify_keep` | Full notification with archive button, stays in inbox |
+| Action | What happens |
+|--------|-------------|
+| `notify_and_archive` | Brief notification, auto-archive |
+| `extract_and_archive` | Extract OTP/links, notify, auto-archive |
+| `summarize_and_archive` | Detailed summary (smarter model), auto-archive |
+| `calendar_and_archive` | Add to calendar via CalDAV (or attach .ics), auto-archive |
+| `notify_keep` | Full notification with Open + Archive buttons, stays in inbox |
+
+### Multiple accounts
+
+```yaml
+accounts:
+  - name: personal
+    host: imap.gmail.com
+    auth:
+      user_env: GMAIL_USER
+      pass_env: GMAIL_APP_PASSWORD
+
+  - name: work
+    host: imap.gmail.com
+    auth:
+      user_env: WORK_GMAIL_USER
+      pass_env: WORK_GMAIL_APP_PASSWORD
+```
 
 ### Calendar (CalDAV)
 
-Supports any CalDAV server: iCloud, Google Calendar, Nextcloud, Fastmail, etc.
+Works with iCloud, Google Calendar, Nextcloud, Fastmail — anything that speaks CalDAV.
 
-**iCloud:**
+Events are deduplicated: if a booking is modified (flight delay, room change), the existing calendar event is updated rather than duplicated. When CalDAV isn't configured, an `.ics` file is attached to the Telegram message instead.
+
 ```yaml
 plugins:
   calendar:
@@ -155,12 +141,14 @@ plugins:
     server_url: https://caldav.icloud.com
     auth_method: Basic
     credentials:
-      username: CALDAV_USERNAME    # env var name
-      password: CALDAV_PASSWORD    # env var name (app-specific password)
+      username: CALDAV_USERNAME
+      password: CALDAV_PASSWORD
     calendar_name: Travel
 ```
 
-**Google Calendar:**
+<details>
+<summary>Google Calendar setup</summary>
+
 ```yaml
 plugins:
   calendar:
@@ -175,29 +163,21 @@ plugins:
       clientSecret: GOOGLE_CLIENT_SECRET
 ```
 
-To get Google OAuth credentials:
-1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable the CalDAV API
-3. Create OAuth 2.0 credentials
-4. Use the OAuth playground to get a refresh token with CalDAV scope
+Create OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/), enable CalDAV API, get a refresh token via the OAuth playground.
+</details>
 
-Calendar events are deduplicated — if a booking is modified (flight delay, room change), the existing event is updated instead of creating a duplicate.
+## Deploy
 
-## Docker
+### Docker
 
 ```bash
 docker build -t bye_emails .
-docker run -d \
-  --env-file .env \
-  -v $(pwd)/config.yaml:/app/config.yaml \
-  --name bye_emails \
-  bye_emails
+docker run -d --env-file .env -v $(pwd)/config.yaml:/app/config.yaml bye_emails
 ```
 
-Or with docker-compose:
+### Docker Compose
 
 ```yaml
-version: "3.8"
 services:
   bye_emails:
     build: .
@@ -207,24 +187,21 @@ services:
     restart: unless-stopped
 ```
 
-## Architecture
+### Dokku
 
+```bash
+dokku apps:create bye-emails
+dokku builder:set bye-emails selected dockerfile
+dokku proxy:disable bye-emails
+dokku checks:disable bye-emails
+dokku config:set bye-emails ANTHROPIC_OAUTH_TOKEN=... GMAIL_USER=... # etc
+git remote add dokku dokku@your-server:bye-emails
+git push dokku main
 ```
-IMAP IDLE → Email arrives → LLM classifies → Plugin executes → Channel notifies
-                                                    ↓
-                                              Archive/Calendar/etc.
-```
-
-- **Watchers** — One IMAP connection per account, using IDLE for real-time push
-- **Classifier** — Single LLM call classifies + extracts data; second call for newsletter summaries
-- **Plugins** — Modular actions (archive, summarize, extract OTP, calendar)
-- **Channels** — Notification targets (Telegram, extensible to others)
 
 ## Extending
 
-### Adding a new plugin
-
-Create a file in `src/plugins/`:
+### Custom plugin
 
 ```typescript
 import type { Plugin, PluginContext } from "../types";
@@ -232,29 +209,27 @@ import type { Plugin, PluginContext } from "../types";
 export const myPlugin: Plugin = {
   name: "my-plugin",
   async execute(ctx: PluginContext) {
-    // Access ctx.email, ctx.classification, ctx.channels, ctx.config
-    // Send notifications via ctx.channels
-    // Archive via ctx.archiveEmail()
+    // ctx.email — parsed email with attachments
+    // ctx.classification — LLM result with extracted data
+    // ctx.channels — send notifications
+    // ctx.archiveEmail() — archive via IMAP
   },
 };
 ```
 
-Register it in `src/index.ts` by adding it to `ACTION_TO_PLUGIN`.
+Register in `src/index.ts` → `ACTION_TO_PLUGIN`.
 
-### Adding a new channel
+### Custom channel
 
-Implement the `Channel` interface from `src/types.ts`:
+Implement the `Channel` interface — `start()`, `stop()`, `send()`, `sendDocument()`.
 
-```typescript
-import type { Channel, ChannelMessage } from "../types";
+## Stack
 
-export class PushbulletChannel implements Channel {
-  name = "pushbullet";
-  async start() { /* init */ }
-  async stop() { /* cleanup */ }
-  async send(message: ChannelMessage) { /* send notification */ }
-}
-```
+- [Bun](https://bun.sh) runtime
+- [ImapFlow](https://github.com/postalsys/imapflow) for IMAP + IDLE
+- [pi-ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai) for LLM calls (Claude)
+- [tsdav](https://github.com/natelindev/tsdav) for CalDAV
+- Telegram Bot API (direct HTTP, no library)
 
 ## License
 
