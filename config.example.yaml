@@ -1,0 +1,91 @@
+# bye_emails configuration
+
+llm:
+  provider: anthropic
+  model: claude-haiku-4-5-20251001       # fast + cheap for triage
+  summarize_model: claude-sonnet-4-6     # smarter model for newsletter summaries
+  api_key_env: ANTHROPIC_OAUTH_TOKEN     # env var holding the API key
+
+accounts:
+  - name: personal
+    host: imap.gmail.com
+    port: 993
+    secure: true
+    auth:
+      user_env: GMAIL_USER
+      pass_env: GMAIL_APP_PASSWORD
+    mailbox: INBOX
+    processed_label: bye_emails/processed
+    poll_interval: 30  # fallback polling interval in seconds
+
+  # Add more accounts as needed:
+  # - name: work
+  #   host: imap.gmail.com
+  #   port: 993
+  #   secure: true
+  #   auth:
+  #     user_env: WORK_GMAIL_USER
+  #     pass_env: WORK_GMAIL_APP_PASSWORD
+
+channels:
+  telegram:
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    chat_id_env: TELEGRAM_CHAT_ID
+
+rules:
+  - name: spam-like
+    description: >
+      Marketing emails, promotional offers, social media notifications,
+      automated notifications that don't require action. Things like
+      "someone liked your post", store promotions, app notifications, etc.
+    action: notify_and_archive
+    notify_template: short
+
+  - name: newsletters
+    description: >
+      Newsletters I'm subscribed to, especially financial newsletters.
+      Investment analysis, market commentary, stock picks, research reports.
+    action: summarize_and_archive
+    notify_template: summary
+
+  - name: security
+    description: >
+      OTP codes, login verification, 2FA codes, password reset links,
+      security alerts, login notifications from services.
+    action: extract_and_archive
+    notify_template: security
+
+  - name: travel
+    description: >
+      Flight confirmations, hotel reservations, train tickets,
+      car rentals, travel itineraries, booking modifications.
+    action: calendar_and_archive
+    notify_template: travel
+
+  - name: needs_attention
+    description: >
+      Emails from real people that need a response, important
+      business emails, anything requiring my direct action or review.
+    action: notify_keep
+    notify_template: full
+
+plugins:
+  calendar:
+    provider: icloud
+    server_url: https://caldav.icloud.com
+    auth_method: Basic
+    credentials:
+      username: CALDAV_USERNAME
+      password: CALDAV_PASSWORD
+    calendar_name: Travel
+
+    # Google Calendar example:
+    # provider: google
+    # server_url: https://apidata.googleusercontent.com/caldav/v2/
+    # auth_method: Oauth
+    # credentials:
+    #   tokenUrl: GOOGLE_TOKEN_URL
+    #   username: GOOGLE_EMAIL
+    #   refreshToken: GOOGLE_REFRESH_TOKEN
+    #   clientId: GOOGLE_CLIENT_ID
+    #   clientSecret: GOOGLE_CLIENT_SECRET

@@ -1,0 +1,24 @@
+{
+  "name": "bye_emails",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/mailparser": "^3.4.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.62.0",
+    "imapflow": "^1.2.16",
+    "mailparser": "^3.9.5",
+    "tsdav": "^2.1.8",
+    "yaml": "^2.8.3"
+  }
+}
