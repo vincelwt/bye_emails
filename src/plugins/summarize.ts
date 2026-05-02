@@ -1,12 +1,14 @@
 import type { Plugin, PluginContext } from "../types";
 import { summarizeNewsletter } from "../triage/classifier";
 import { bold, escapeHtml } from "../channels/telegram";
+import { isLowPriorityNotification } from "../notifications";
 
 export const summarizePlugin: Plugin = {
   name: "summarize",
 
   async execute(ctx: PluginContext) {
-    const { email, config, channels } = ctx;
+    const { email, classification, config, channels } = ctx;
+    const silent = isLowPriorityNotification(classification);
 
     // Run the detailed summarization with the smarter model
     const summary = await summarizeNewsletter(email, config);
@@ -38,7 +40,7 @@ export const summarizePlugin: Plugin = {
     lines.push(`\n<i>Auto-archived</i>`);
 
     for (const channel of channels) {
-      await channel.send({ text: lines.join("\n"), parse_mode: "HTML" });
+      await channel.send({ text: lines.join("\n"), parse_mode: "HTML", silent });
     }
 
     await ctx.archiveEmail();

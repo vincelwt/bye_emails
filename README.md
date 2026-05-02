@@ -90,6 +90,13 @@ rules:
       that don't need action.
     action: notify_and_archive
 
+  - name: receipts
+    description: >
+      Receipts, invoices, billing statements, payment confirmations,
+      subscription receipts, vendor invoices, and bookkeeping copies
+      that only need to be filed.
+    action: notify_and_archive
+
   - name: travel
     description: >
       Flight confirmations, hotel reservations, train tickets,
@@ -107,9 +114,9 @@ rules:
 
 | Action | What happens |
 |--------|-------------|
-| `notify_and_archive` | Brief notification, auto-archive |
+| `notify_and_archive` | Brief silent notification, auto-archive |
 | `extract_and_archive` | Extract OTP/links, notify, auto-archive |
-| `summarize_and_archive` | Detailed summary (smarter model), auto-archive |
+| `summarize_and_archive` | Detailed silent summary (smarter model), auto-archive |
 | `calendar_and_archive` | Add to calendar via CalDAV (or attach .ics), auto-archive |
 | `notify_keep` | Full notification with Open + Archive buttons, stays in inbox |
 

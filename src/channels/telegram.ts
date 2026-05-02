@@ -48,6 +48,9 @@ export class TelegramChannel implements Channel {
       parse_mode: message.parse_mode ?? "HTML",
       disable_web_page_preview: true,
     };
+    if (message.silent) {
+      body.disable_notification = true;
+    }
 
     if (message.buttons?.length) {
       body.reply_markup = {
@@ -85,6 +88,9 @@ export class TelegramChannel implements Channel {
     if (doc.caption) {
       formData.append("caption", doc.caption);
       formData.append("parse_mode", doc.parse_mode ?? "HTML");
+    }
+    if (doc.silent) {
+      formData.append("disable_notification", "true");
     }
 
     const res = await fetch(`${this.baseUrl}/sendDocument`, {

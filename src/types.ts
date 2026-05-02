@@ -92,6 +92,7 @@ export interface ChannelMessage {
     url?: string;
   }>[];  // array of rows, each row is array of buttons
   parse_mode?: "HTML" | "MarkdownV2";
+  silent?: boolean;
 }
 
 export interface ChannelDocument {
@@ -100,6 +101,7 @@ export interface ChannelDocument {
   contentType: string;
   caption?: string;
   parse_mode?: "HTML" | "MarkdownV2";
+  silent?: boolean;
 }
 
 export interface Channel {

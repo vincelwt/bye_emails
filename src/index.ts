@@ -8,6 +8,7 @@ import { summarizePlugin } from "./plugins/summarize";
 import { calendarPlugin } from "./plugins/calendar";
 import { notifyKeepPlugin } from "./plugins/notify-keep";
 import type { Channel, Plugin, ParsedEmail, RuleAction, Config } from "./types";
+import { isLowPriorityNotification } from "./notifications";
 
 const ACTION_TO_PLUGIN: Record<RuleAction, Plugin> = {
   notify_and_archive: archivePlugin,
@@ -152,12 +153,14 @@ async function handleEmail(
 
     // Forward email attachments (unless notify-keep already handled them)
     if (classification.action !== "notify_keep" && email.attachments.length > 0) {
+      const silent = isLowPriorityNotification(classification);
       for (const channel of channels) {
         for (const att of email.attachments) {
           await channel.sendDocument({
             filename: att.filename,
             content: att.content,
             contentType: att.contentType,
+            silent,
           });
         }
       }

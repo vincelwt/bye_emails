@@ -43,6 +43,17 @@ rules:
     action: notify_and_archive
     notify_template: short
 
+  - name: receipts
+    description: >
+      Receipts, invoices, billing statements, e-receipts, payment
+      confirmations, subscription receipts, vendor invoices, SaaS receipts,
+      and bookkeeping copies that only need to be filed. If the message says
+      payment failed, action is required, a payment method must be updated,
+      a bill is overdue, or service may be interrupted, classify it as
+      needs_attention instead.
+    action: notify_and_archive
+    notify_template: short
+
   - name: newsletters
     description: >
       Newsletters I'm subscribed to, especially financial newsletters.
