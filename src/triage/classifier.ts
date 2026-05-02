@@ -35,6 +35,18 @@ function parseJsonResponse(text: string): any {
   return JSON.parse(cleaned);
 }
 
+function fallbackClassification(email: ParsedEmail): Classification {
+  const sender = email.from.name || email.from.address || "unknown sender";
+  return {
+    rule: "needs_attention",
+    action: "notify_keep",
+    confidence: 0,
+    extracted: {
+      brief: `Could not classify email from ${sender}: ${email.subject}`,
+    },
+  };
+}
+
 export async function classifyEmail(
   email: ParsedEmail,
   config: Config
@@ -60,7 +72,15 @@ export async function classifyEmail(
   );
 
   const responseText = extractText(result.content);
-  const parsed = parseJsonResponse(responseText);
+  let parsed: any;
+  try {
+    parsed = parseJsonResponse(responseText);
+  } catch (err) {
+    console.warn(
+      `[${email.accountName}] Failed to parse classification JSON for "${email.subject}" (${responseText.length} chars): ${err instanceof Error ? err.message : String(err)}`
+    );
+    return fallbackClassification(email);
+  }
 
   // Match to a configured rule
   const matchedRule = config.rules.find((r) => r.name === parsed.rule);

@@ -1,5 +1,8 @@
 import type { Rule } from "../types";
 
+const MAX_BODY_LENGTH = 4000;
+const MAX_URL_LENGTH = 300;
+
 export function buildClassificationPrompt(rules: Rule[]): string {
   const rulesBlock = rules
     .map(
@@ -73,6 +76,7 @@ Respond with valid JSON only (no markdown, no code fences). Use this schema:
 }
 
 Only include the fields relevant to the matched rule. Always include "brief".
+Do not include URLs that are marked as omitted or that are too long to fit comfortably in JSON.
 If travel dates/times cannot be determined, use your best estimate and note uncertainty in "notes".
 For security emails, extract ONLY the actionable information (codes, links).
 The "brief" should be a complete, self-contained summary — do not assume the reader sees the subject line or sender separately.`;
@@ -85,17 +89,32 @@ export function buildEmailContext(email: {
   date: Date;
 }): string {
   // Truncate body to avoid token waste
-  const maxBodyLength = 4000;
   const body =
-    email.text.length > maxBodyLength
-      ? email.text.slice(0, maxBodyLength) + "\n[... truncated]"
+    email.text.length > MAX_BODY_LENGTH
+      ? email.text.slice(0, MAX_BODY_LENGTH) + "\n[... truncated]"
       : email.text;
+  const sanitizedBody = omitLongUrls(body);
 
   return `From: ${email.from.name} <${email.from.address}>
 Subject: ${email.subject}
 Date: ${email.date.toISOString()}
 
-${body}`;
+${sanitizedBody}`;
+}
+
+function omitLongUrls(text: string): string {
+  return text.replace(/https?:\/\/[^\s<>"')\]]+/g, (url) => {
+    if (url.length <= MAX_URL_LENGTH) return url;
+    return `[long URL omitted: ${getUrlOrigin(url)}]`;
+  });
+}
+
+function getUrlOrigin(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return "unparseable URL";
+  }
 }
 
 export function buildSummarizationPrompt(): string {
