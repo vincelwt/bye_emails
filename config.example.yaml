@@ -18,14 +18,16 @@ accounts:
     processed_label: bye_emails/processed
     poll_interval: 30  # fallback polling interval in seconds
 
-  # Add more accounts as needed:
-  # - name: work
-  #   host: imap.gmail.com
-  #   port: 993
-  #   secure: true
-  #   auth:
-  #     user_env: WORK_GMAIL_USER
-  #     pass_env: WORK_GMAIL_APP_PASSWORD
+  - name: cldstart
+    host: imap.gmail.com
+    port: 993
+    secure: true
+    auth:
+      user_env: CLDSTART_GMAIL_USER
+      pass_env: CLDSTART_GMAIL_APP_PASSWORD
+    mailbox: INBOX
+    processed_label: bye_emails/processed
+    poll_interval: 30  # fallback polling interval in seconds
 
 channels:
   telegram:

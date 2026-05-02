@@ -35,7 +35,7 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 - [Bun](https://bun.sh)
 - A [Telegram bot](https://t.me/botfather)
 - An [OpenAI API key](https://platform.openai.com/api-keys)
-- A Gmail [App Password](https://myaccount.google.com/apppasswords) (or any IMAP credentials)
+- Gmail IMAP credentials. For Google Workspace, use an app password only if your admin settings allow it.
 
 ### Setup
 
@@ -49,11 +49,13 @@ cp config.example.yaml config.yaml
 Create a `.env`:
 
 ```env
-OPENAI_API_KEY=sk-proj-...
+OPENAI_API_KEY=<openai-api-key>
 GMAIL_USER=you@gmail.com
-GMAIL_APP_PASSWORD=abcd-efgh-ijkl-mnop
-TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
-TELEGRAM_CHAT_ID=123456789
+GMAIL_APP_PASSWORD=<gmail-app-password>
+CLDSTART_GMAIL_USER=you@cldstart.com
+CLDSTART_GMAIL_APP_PASSWORD=<workspace-gmail-app-password>
+TELEGRAM_BOT_TOKEN=<telegram-bot-token>
+TELEGRAM_CHAT_ID=<telegram-chat-id>
 ```
 
 > **Telegram chat ID**: message your bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to find it.
@@ -121,12 +123,26 @@ accounts:
       user_env: GMAIL_USER
       pass_env: GMAIL_APP_PASSWORD
 
-  - name: work
+  - name: cldstart
     host: imap.gmail.com
     auth:
-      user_env: WORK_GMAIL_USER
-      pass_env: WORK_GMAIL_APP_PASSWORD
+      user_env: CLDSTART_GMAIL_USER
+      pass_env: CLDSTART_GMAIL_APP_PASSWORD
 ```
+
+The shipped Docker config already includes the `cldstart` account. Set `CLDSTART_GMAIL_USER` to the full Google Workspace address, for example `you@cldstart.com`, and `CLDSTART_GMAIL_APP_PASSWORD` to that account's app password.
+
+### Google Workspace app password
+
+Use this for `CLDSTART_GMAIL_APP_PASSWORD` if your Workspace account can create app passwords.
+
+1. In Google Admin, turn on IMAP:
+   `Apps > Google Workspace > Gmail > End User Access > POP and IMAP access > Enable IMAP access for all users`.
+2. Sign in as the mailbox user, then make sure 2-Step Verification is enabled.
+3. Go to `https://myaccount.google.com/apppasswords` and create a Mail app password.
+4. Store the generated 16-character password as `CLDSTART_GMAIL_APP_PASSWORD`.
+
+App passwords are usually set once per app or device, but Google can revoke them when the account password changes. If the App Passwords page is unavailable, check whether the account is under Advanced Protection, is restricted to security-key-only 2-Step Verification, or has an organization policy that blocks app passwords.
 
 ### Calendar (CalDAV)
 
@@ -194,7 +210,14 @@ dokku apps:create bye-emails
 dokku builder:set bye-emails selected dockerfile
 dokku proxy:disable bye-emails
 dokku checks:disable bye-emails
-dokku config:set bye-emails OPENAI_API_KEY=... GMAIL_USER=... # etc
+dokku config:set bye-emails \
+  OPENAI_API_KEY=... \
+  GMAIL_USER=you@gmail.com \
+  GMAIL_APP_PASSWORD=... \
+  CLDSTART_GMAIL_USER=you@cldstart.com \
+  CLDSTART_GMAIL_APP_PASSWORD=... \
+  TELEGRAM_BOT_TOKEN=... \
+  TELEGRAM_CHAT_ID=...
 git remote add dokku dokku@your-server:bye-emails
 git push dokku main
 ```
