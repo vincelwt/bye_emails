@@ -78,10 +78,10 @@ export async function loadConfig(path: string): Promise<Config> {
     account.secure ??= true;
   }
 
-  config.llm.provider ??= "anthropic";
-  config.llm.model ??= "claude-haiku-4-5-20251001";
-  config.llm.summarize_model ??= "claude-sonnet-4-6";
-  config.llm.api_key_env ??= "ANTHROPIC_OAUTH_TOKEN";
+  config.llm.provider ??= "openai";
+  config.llm.model ??= "gpt-5.4-nano";
+  config.llm.summarize_model ??= "gpt-5.4-nano";
+  config.llm.api_key_env ??= "OPENAI_API_KEY";
 
   return config;
 }

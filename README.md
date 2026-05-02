@@ -17,7 +17,7 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 
 ## Features
 
-- **Real-time** — IMAP IDLE (push, not polling). OTP codes arrive in Telegram within seconds
+- **Responsive monitoring** — IMAP IDLE with a fallback inbox scan so missed pushes are picked up quickly
 - **Smart triage** — LLM classifies emails using your natural language rules
 - **OTP extraction** — security codes and action links pulled out and sent directly
 - **Newsletter summaries** — financial newsletters broken down by company with bull/bear thesis
@@ -34,7 +34,7 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 
 - [Bun](https://bun.sh)
 - A [Telegram bot](https://t.me/botfather)
-- An [Anthropic API key](https://console.anthropic.com/)
+- An [OpenAI API key](https://platform.openai.com/api-keys)
 - A Gmail [App Password](https://myaccount.google.com/apppasswords) (or any IMAP credentials)
 
 ### Setup
@@ -49,7 +49,7 @@ cp config.example.yaml config.yaml
 Create a `.env`:
 
 ```env
-ANTHROPIC_OAUTH_TOKEN=sk-ant-...
+OPENAI_API_KEY=sk-proj-...
 GMAIL_USER=you@gmail.com
 GMAIL_APP_PASSWORD=abcd-efgh-ijkl-mnop
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
@@ -194,7 +194,7 @@ dokku apps:create bye-emails
 dokku builder:set bye-emails selected dockerfile
 dokku proxy:disable bye-emails
 dokku checks:disable bye-emails
-dokku config:set bye-emails ANTHROPIC_OAUTH_TOKEN=... GMAIL_USER=... # etc
+dokku config:set bye-emails OPENAI_API_KEY=... GMAIL_USER=... # etc
 git remote add dokku dokku@your-server:bye-emails
 git push dokku main
 ```
@@ -227,7 +227,7 @@ Implement the `Channel` interface — `start()`, `stop()`, `send()`, `sendDocume
 
 - [Bun](https://bun.sh) runtime
 - [ImapFlow](https://github.com/postalsys/imapflow) for IMAP + IDLE
-- [pi-ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai) for LLM calls (Claude)
+- [pi-ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai) for LLM calls
 - [tsdav](https://github.com/natelindev/tsdav) for CalDAV
 - Telegram Bot API (direct HTTP, no library)
 

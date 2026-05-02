@@ -1,10 +1,10 @@
 # bye_emails configuration
 
 llm:
-  provider: anthropic
-  model: claude-haiku-4-5-20251001       # fast + cheap for triage
-  summarize_model: claude-sonnet-4-6     # smarter model for newsletter summaries
-  api_key_env: ANTHROPIC_OAUTH_TOKEN     # env var holding the API key
+  provider: openai
+  model: gpt-5.4-nano                    # fast + cheap for triage
+  summarize_model: gpt-5.4-nano          # model for newsletter summaries
+  api_key_env: OPENAI_API_KEY            # env var holding the API key
 
 accounts:
   - name: personal

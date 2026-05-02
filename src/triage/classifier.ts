@@ -7,6 +7,16 @@ import {
 } from "./prompts";
 import { resolveLlmApiKey } from "../config";
 
+function resolveConfiguredModel(config: Config, modelId: string) {
+  const model = getModel(config.llm.provider as any, modelId as any);
+  if (!model) {
+    throw new Error(
+      `Unknown LLM model "${modelId}" for provider "${config.llm.provider}"`
+    );
+  }
+  return model;
+}
+
 function extractText(
   content: Array<{ type: string; text?: string }>
 ): string {
@@ -30,7 +40,7 @@ export async function classifyEmail(
   config: Config
 ): Promise<Classification> {
   const apiKey = resolveLlmApiKey(config);
-  const model = getModel("anthropic", config.llm.model as any);
+  const model = resolveConfiguredModel(config, config.llm.model);
   const systemPrompt = buildClassificationPrompt(config.rules);
   const emailContext = buildEmailContext(email);
 
@@ -80,7 +90,7 @@ export async function summarizeNewsletter(
   config: Config
 ): Promise<ExtractedData> {
   const apiKey = resolveLlmApiKey(config);
-  const model = getModel("anthropic", config.llm.summarize_model as any);
+  const model = resolveConfiguredModel(config, config.llm.summarize_model);
   const systemPrompt = buildSummarizationPrompt();
 
   // Use the full email body for summarization
