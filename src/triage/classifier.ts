@@ -6,6 +6,7 @@ import {
   buildSummarizationPrompt,
 } from "./prompts";
 import { resolveLlmApiKey } from "../config";
+import { classifyGitHubEmail } from "../github";
 
 function resolveConfiguredModel(config: Config, modelId: string) {
   const model = getModel(config.llm.provider as any, modelId as any);
@@ -51,6 +52,9 @@ export async function classifyEmail(
   email: ParsedEmail,
   config: Config
 ): Promise<Classification> {
+  const githubClassification = classifyGitHubEmail(email);
+  if (githubClassification) return githubClassification;
+
   const apiKey = resolveLlmApiKey(config);
   const model = resolveConfiguredModel(config, config.llm.model);
   const systemPrompt = buildClassificationPrompt(config.rules);

@@ -18,7 +18,7 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 ## Features
 
 - **Responsive monitoring** — IMAP IDLE with a fallback inbox scan so missed pushes are picked up quickly
-- **Smart triage** — LLM classifies emails using your natural language rules
+- **Smart triage** — deterministic sender policies for GitHub plus LLM classification using your natural language rules
 - **OTP extraction** — security codes and action links pulled out and sent directly
 - **Newsletter summaries** — financial newsletters broken down by company with bull/bear thesis
 - **Travel to calendar** — flights, hotels, trains auto-added via CalDAV (iCloud, Google, Nextcloud). Handles multi-leg flights, timezones, and booking updates without creating duplicates
@@ -72,6 +72,12 @@ Everything lives in `config.yaml`. Rules are plain English — the LLM uses them
 
 ```yaml
 rules:
+  - name: github
+    description: >
+      Emails sent by GitHub, including repository activity, pull requests,
+      issues, Actions, Dependabot, and account notifications.
+    action: notify_and_archive
+
   - name: security
     description: >
       OTP codes, login verification, 2FA codes, password reset links,
@@ -109,6 +115,8 @@ rules:
       emails, anything requiring direct action.
     action: notify_keep
 ```
+
+GitHub sender addresses (`@github.com` and its subdomains) are matched before LLM triage and always use `notify_and_archive`, even when a custom config omits the `github` rule.
 
 ### Actions
 

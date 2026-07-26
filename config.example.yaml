@@ -35,6 +35,14 @@ channels:
     chat_id_env: TELEGRAM_CHAT_ID
 
 rules:
+  - name: github
+    description: >
+      Emails sent by GitHub, including repository activity, pull requests,
+      issues, Actions, Dependabot, and account notifications. GitHub sender
+      addresses are matched before LLM triage so these always auto-archive.
+    action: notify_and_archive
+    notify_template: short
+
   - name: spam-like
     description: >
       Marketing emails, promotional offers, social media notifications,
