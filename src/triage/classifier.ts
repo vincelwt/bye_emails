@@ -1,4 +1,4 @@
-import { complete, getModel } from "@mariozechner/pi-ai";
+import { complete, getModel, type Model } from "@mariozechner/pi-ai";
 import type { Config, ParsedEmail, Classification, ExtractedData } from "../types";
 import {
   buildClassificationPrompt,
@@ -8,14 +8,35 @@ import {
 import { resolveLlmApiKey } from "../config";
 import { classifyGitHubEmail } from "../github";
 
+const GPT_5_6_LUNA: Model<"openai-responses"> = {
+  id: "gpt-5.6-luna",
+  name: "GPT-5.6 Luna",
+  api: "openai-responses",
+  provider: "openai",
+  baseUrl: "https://api.openai.com/v1",
+  reasoning: true,
+  input: ["text", "image"],
+  cost: {
+    input: 0.2,
+    output: 1.2,
+    cacheRead: 0.02,
+    cacheWrite: 0.25,
+  },
+  contextWindow: 1_050_000,
+  maxTokens: 128_000,
+};
+
 function resolveConfiguredModel(config: Config, modelId: string) {
   const model = getModel(config.llm.provider as any, modelId as any);
-  if (!model) {
-    throw new Error(
-      `Unknown LLM model "${modelId}" for provider "${config.llm.provider}"`
-    );
+  if (model) return model;
+
+  if (config.llm.provider === "openai" && modelId === GPT_5_6_LUNA.id) {
+    return GPT_5_6_LUNA;
   }
-  return model;
+
+  throw new Error(
+    `Unknown LLM model "${modelId}" for provider "${config.llm.provider}"`
+  );
 }
 
 function extractText(

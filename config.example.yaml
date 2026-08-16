@@ -2,8 +2,8 @@
 
 llm:
   provider: openai
-  model: gpt-5.4-nano                    # fast + cheap for triage
-  summarize_model: gpt-5.4-nano          # model for newsletter summaries
+  model: gpt-5.6-luna                     # cost-efficient model for triage
+  summarize_model: gpt-5.6-luna           # model for newsletter summaries
   api_key_env: OPENAI_API_KEY            # env var holding the API key
 
 accounts:
@@ -40,6 +40,37 @@ rules:
       Emails sent by GitHub, including repository activity, pull requests,
       issues, Actions, Dependabot, and account notifications. GitHub sender
       addresses are matched before LLM triage so these always auto-archive.
+    action: notify_and_archive
+    notify_template: short
+
+  - name: netdata_alert
+    description: >
+      Automated Netdata monitoring alerts and recovery notices, including
+      health alarms, anomaly detections, threshold alerts, and resolved alerts.
+      These are status notifications from Netdata and should be filed after a
+      brief notification, even when the alert reports a problem.
+    action: notify_and_archive
+    notify_template: short
+
+  - name: app_store_submission_status
+    description: >
+      Automated Apple App Store Connect or Apple Developer notices about an
+      app submission, build, version, or TestFlight review status. This
+      includes accepted, rejected, metadata-rejected, waiting-for-review,
+      in-review, approved, ready-for-sale, released, processing, and similar
+      submission-state changes. Do not use this for Apple account security,
+      billing, legal, or team-management messages.
+    action: notify_and_archive
+    notify_template: short
+
+  - name: play_store_submission_status
+    description: >
+      Automated Google Play Console or Google Play Developer notices about an
+      app or release submission, review, publishing, rollout, or availability
+      status. This includes accepted, rejected, under-review, changes-sent-for-
+      review, published, live, halted, processing, and similar release-state
+      changes. Do not use this for Google account security, billing, policy,
+      legal, or developer-account administration messages.
     action: notify_and_archive
     notify_template: short
 

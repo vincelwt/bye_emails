@@ -79,8 +79,8 @@ export async function loadConfig(path: string): Promise<Config> {
   }
 
   config.llm.provider ??= "openai";
-  config.llm.model ??= "gpt-5.4-nano";
-  config.llm.summarize_model ??= "gpt-5.4-nano";
+  config.llm.model ??= "gpt-5.6-luna";
+  config.llm.summarize_model ??= "gpt-5.6-luna";
   config.llm.api_key_env ??= "OPENAI_API_KEY";
 
   return config;

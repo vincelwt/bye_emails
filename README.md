@@ -19,6 +19,7 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 
 - **Responsive monitoring** — IMAP IDLE with a fallback inbox scan so missed pushes are picked up quickly
 - **Smart triage** — deterministic sender policies for GitHub plus LLM classification using your natural language rules
+- **Operational filing** — Netdata monitoring alerts and Apple App Store / Google Play submission status changes are briefly notified and then archived
 - **OTP extraction** — security codes and action links pulled out and sent directly
 - **Newsletter summaries** — financial newsletters broken down by company with bull/bear thesis
 - **Travel to calendar** — flights, hotels, trains auto-added via CalDAV (iCloud, Google, Nextcloud). Handles multi-leg flights, timezones, and booking updates without creating duplicates
@@ -83,6 +84,23 @@ rules:
       OTP codes, login verification, 2FA codes, password reset links,
       security alerts, login notifications.
     action: extract_and_archive
+
+  - name: netdata_alert
+    description: >
+      Netdata monitoring health, anomaly, threshold, and recovery alerts.
+    action: notify_and_archive
+
+  - name: app_store_submission_status
+    description: >
+      App Store Connect submission and TestFlight review state changes,
+      including approval, rejection, review, processing, and release status.
+    action: notify_and_archive
+
+  - name: play_store_submission_status
+    description: >
+      Google Play Console release submission, review, publishing, rollout,
+      and availability state changes.
+    action: notify_and_archive
 
   - name: newsletters
     description: >
