@@ -18,8 +18,16 @@ export interface ParsedEmail {
   date: Date;
   headers: Record<string, string>;
   accountName: string;
+  gmailCategory?: GmailCategory;
   attachments: EmailAttachment[];
 }
+
+export type GmailCategory =
+  | "primary"
+  | "promotions"
+  | "social"
+  | "updates"
+  | "forums";
 
 export type RuleAction =
   | "notify_and_archive"

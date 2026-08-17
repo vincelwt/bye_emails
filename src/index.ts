@@ -7,7 +7,15 @@ import { securityPlugin } from "./plugins/security";
 import { summarizePlugin } from "./plugins/summarize";
 import { calendarPlugin } from "./plugins/calendar";
 import { notifyKeepPlugin } from "./plugins/notify-keep";
-import type { Channel, Plugin, ParsedEmail, RuleAction, Config } from "./types";
+import { isGmailAutoArchiveCategory } from "./gmail";
+import type {
+  Channel,
+  Plugin,
+  ParsedEmail,
+  RuleAction,
+  Config,
+  Classification,
+} from "./types";
 import { isLowPriorityNotification } from "./notifications";
 
 const ACTION_TO_PLUGIN: Record<RuleAction, Plugin> = {
@@ -127,10 +135,12 @@ async function handleEmail(
 
   try {
     // Classify
-    const classification = await classifyEmail(email, config);
+    let classification = await classifyEmail(email, config);
     console.log(
       `[${email.accountName}] Classified as "${classification.rule}" (confidence: ${classification.confidence})`
     );
+
+    classification = applyGmailCategoryArchiveOverride(email, classification);
 
     // Execute the appropriate plugin
     const plugin = ACTION_TO_PLUGIN[classification.action];
@@ -178,6 +188,34 @@ async function handleEmail(
       err
     );
   }
+}
+
+function applyGmailCategoryArchiveOverride(
+  email: ParsedEmail,
+  classification: Classification
+): Classification {
+  if (
+    classification.action !== "notify_keep" ||
+    !isGmailAutoArchiveCategory(email.gmailCategory)
+  ) {
+    return classification;
+  }
+
+  console.log(
+    `[${email.accountName}] Gmail category "${email.gmailCategory}" overrides notify_keep; archiving UID ${email.uid}`
+  );
+
+  return {
+    ...classification,
+    rule: `gmail_${email.gmailCategory}`,
+    action: "notify_and_archive",
+    extracted: {
+      ...classification.extracted,
+      brief:
+        classification.extracted.brief ??
+        `${email.from.name || email.from.address}: ${email.subject}`,
+    },
+  };
 }
 
 main().catch((err) => {

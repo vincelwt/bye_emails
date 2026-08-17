@@ -1,6 +1,12 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
-import type { ParsedEmail, ImapAccountConfig, EmailAttachment } from "../types";
+import type {
+  ParsedEmail,
+  ImapAccountConfig,
+  EmailAttachment,
+  GmailCategory,
+} from "../types";
+import { GMAIL_AUTO_ARCHIVE_CATEGORIES } from "../gmail";
 
 const IDLE_RESTART_INTERVAL_MS = 25 * 60 * 1000;
 const MAX_PARALLEL_EMAIL_PROCESSING = 3;
@@ -167,8 +173,11 @@ export class ImapWatcher {
 
       // Fetch all messages and check which ones lack our processed label/flag
       const unprocessedUids: number[] = [];
+      const processedGmailAutoArchiveUids: number[] = [];
 
       if (this.isGmail) {
+        const gmailAutoArchiveUids = await this.findGmailAutoArchiveUids();
+
         // Gmail: check X-GM-LABELS for processed label
         for await (const msg of this.client.fetch("1:*", {
           uid: true,
@@ -177,6 +186,8 @@ export class ImapWatcher {
           const labels = msg.labels ? Array.from(msg.labels) : [];
           if (!labels.includes(this.account.processed_label)) {
             unprocessedUids.push(msg.uid);
+          } else if (gmailAutoArchiveUids.has(msg.uid)) {
+            processedGmailAutoArchiveUids.push(msg.uid);
           }
         }
       } else {
@@ -204,6 +215,15 @@ export class ImapWatcher {
       } else if (source !== "poll") {
         console.log(
           `[${this.account.name}] No unprocessed emails via ${source} (${Date.now() - startedAt}ms)`
+        );
+      }
+
+      if (processedGmailAutoArchiveUids.length > 0) {
+        const archived = await this.archiveGmailUidsFromCurrentMailbox(
+          processedGmailAutoArchiveUids
+        );
+        console.log(
+          `[${this.account.name}] Archived ${archived}/${processedGmailAutoArchiveUids.length} processed Gmail ${GMAIL_AUTO_ARCHIVE_CATEGORIES.join(", ")} email(s) via ${source}`
         );
       }
     } finally {
@@ -289,7 +309,13 @@ export class ImapWatcher {
 
       if (!message || !message.source) return null;
 
-      const email = await this.parseEmail(uid, message.source as Buffer);
+      const gmailCategory = await this.detectGmailCategory(uid);
+
+      const email = await this.parseEmail(
+        uid,
+        message.source as Buffer,
+        gmailCategory
+      );
       email.gmailMessageId = this.isGmail ? message.emailId : undefined;
       email.gmailThreadId = this.isGmail ? message.threadId : undefined;
 
@@ -307,7 +333,8 @@ export class ImapWatcher {
 
   private async parseEmail(
     uid: number,
-    source: Buffer
+    source: Buffer,
+    gmailCategory?: GmailCategory
   ): Promise<ParsedEmail> {
     const parsed = await simpleParser(source);
 
@@ -334,6 +361,7 @@ export class ImapWatcher {
         ])
       ),
       accountName: this.account.name,
+      gmailCategory,
       attachments: (parsed.attachments ?? []).map((att): EmailAttachment => ({
         filename: att.filename ?? "attachment",
         contentType: att.contentType ?? "application/octet-stream",
@@ -341,6 +369,68 @@ export class ImapWatcher {
         size: att.size,
       })),
     };
+  }
+
+  private async detectGmailCategory(
+    uid: number
+  ): Promise<GmailCategory | undefined> {
+    if (!this.client || !this.isGmail) return undefined;
+
+    for (const category of GMAIL_AUTO_ARCHIVE_CATEGORIES) {
+      const matches = await this.findGmailCategoryUids(category, uid);
+      if (matches.includes(uid)) {
+        return category;
+      }
+    }
+
+    return undefined;
+  }
+
+  private async findGmailAutoArchiveUids(): Promise<Set<number>> {
+    const uids = new Set<number>();
+
+    for (const category of GMAIL_AUTO_ARCHIVE_CATEGORIES) {
+      for (const uid of await this.findGmailCategoryUids(category)) {
+        uids.add(uid);
+      }
+    }
+
+    return uids;
+  }
+
+  private async findGmailCategoryUids(
+    category: GmailCategory,
+    uid?: number
+  ): Promise<number[]> {
+    if (!this.client || !this.isGmail) return [];
+
+    const matches = await this.client.search(
+      {
+        ...(uid !== undefined ? { uid: String(uid) } : {}),
+        gmraw: `category:${category}`,
+      },
+      { uid: true }
+    );
+
+    return Array.isArray(matches) ? matches : [];
+  }
+
+  private async archiveGmailUidsFromCurrentMailbox(
+    uids: number[]
+  ): Promise<number> {
+    if (!this.client || !this.isGmail) return 0;
+
+    let archived = 0;
+    for (const uid of uids) {
+      const result = await this.client.messageMove(
+        String(uid),
+        "[Gmail]/All Mail",
+        { uid: true }
+      );
+      if (result !== false) archived++;
+    }
+
+    return archived;
   }
 
   private async idleLoop() {
