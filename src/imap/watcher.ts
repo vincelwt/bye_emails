@@ -278,13 +278,22 @@ export class ImapWatcher {
 
       const message = await this.client.fetchOne(
         String(uid),
-        { uid: true, source: true, envelope: true },
+        {
+          uid: true,
+          source: true,
+          envelope: true,
+          threadId: this.isGmail,
+        },
         { uid: true }
       );
 
       if (!message || !message.source) return null;
 
-      return await this.parseEmail(uid, message.source as Buffer);
+      const email = await this.parseEmail(uid, message.source as Buffer);
+      email.gmailMessageId = this.isGmail ? message.emailId : undefined;
+      email.gmailThreadId = this.isGmail ? message.threadId : undefined;
+
+      return email;
     } catch (err) {
       console.error(
         `[${this.account.name}] Error fetching UID ${uid}:`,

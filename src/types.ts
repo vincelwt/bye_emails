@@ -8,6 +8,8 @@ export interface EmailAttachment {
 export interface ParsedEmail {
   uid: number;
   messageId: string;
+  gmailMessageId?: string;
+  gmailThreadId?: string;
   from: { name: string; address: string };
   to: Array<{ name: string; address: string }>;
   subject: string;
@@ -171,11 +173,4 @@ export interface Config {
   plugins?: {
     calendar?: CalendarConfig;
   };
-}
-
-// Helper to build Gmail URL from message ID
-export function getGmailUrl(messageId: string): string {
-  // Strip angle brackets from Message-ID header
-  const cleanId = messageId.replace(/^<|>$/g, "");
-  return `https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(cleanId)}`;
 }

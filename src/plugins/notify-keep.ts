@@ -1,5 +1,5 @@
 import type { Plugin, PluginContext } from "../types";
-import { getGmailUrl } from "../types";
+import { getGmailUrl } from "../gmail-url";
 import { bold, escapeHtml, link } from "../channels/telegram";
 
 export const notifyKeepPlugin: Plugin = {
@@ -20,7 +20,7 @@ export const notifyKeepPlugin: Plugin = {
     }
 
     const callbackData = `archive:${email.accountName}:${email.uid}`;
-    const emailUrl = getGmailUrl(email.messageId);
+    const emailUrl = getGmailUrl(email);
 
     for (const channel of channels) {
       await channel.send({
@@ -28,7 +28,7 @@ export const notifyKeepPlugin: Plugin = {
         parse_mode: "HTML",
         buttons: [
           [
-            { label: "📧 Open email", url: emailUrl },
+            ...(emailUrl ? [{ label: "📧 Open email", url: emailUrl }] : []),
             { label: "✓ Archive", callback_data: callbackData },
           ],
         ],
