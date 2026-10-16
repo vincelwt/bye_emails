@@ -35,6 +35,8 @@ channels:
     chat_id_env: TELEGRAM_CHAT_ID
 
 rules:
+  # Linear sender addresses (@linear.app) are archived silently after triage,
+  # with no Telegram message. Security emails (login codes) still notify.
   - name: github
     description: >
       Emails sent by GitHub, including repository activity, pull requests,

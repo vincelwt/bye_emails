@@ -34,7 +34,8 @@ export type RuleAction =
   | "summarize_and_archive"
   | "extract_and_archive"
   | "calendar_and_archive"
-  | "notify_keep";
+  | "notify_keep"
+  | "archive_silently";
 
 export interface Rule {
   name: string;

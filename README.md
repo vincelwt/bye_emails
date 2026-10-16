@@ -18,7 +18,7 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 ## Features
 
 - **Responsive monitoring** — IMAP IDLE with a fallback inbox scan so missed pushes are picked up quickly
-- **Smart triage** — deterministic sender policies for GitHub plus LLM classification using your natural language rules
+- **Smart triage** — deterministic sender policies for GitHub and Linear plus LLM classification using your natural language rules
 - **Operational filing** — Netdata monitoring alerts and Apple App Store / Google Play submission status changes are briefly notified and then archived
 - **OTP extraction** — security codes and action links pulled out and sent directly
 - **Newsletter summaries** — financial newsletters broken down by company with bull/bear thesis
@@ -136,6 +136,8 @@ rules:
 
 GitHub sender addresses (`@github.com` and its subdomains) are matched before LLM triage and always use `notify_and_archive`, even when a custom config omits the `github` rule.
 
+Linear sender addresses (`@linear.app` and its subdomains) are archived with `archive_silently` after triage: no Telegram message and no forwarded attachments. The one exception is email the classifier marks as `extract_and_archive`, so Linear login codes still arrive.
+
 ### Actions
 
 | Action | What happens |
@@ -145,6 +147,7 @@ GitHub sender addresses (`@github.com` and its subdomains) are matched before LL
 | `summarize_and_archive` | Detailed silent summary (smarter model), auto-archive |
 | `calendar_and_archive` | Add to calendar via CalDAV (or attach .ics), auto-archive |
 | `notify_keep` | Full notification with Open + Archive buttons, stays in inbox |
+| `archive_silently` | Auto-archive with no notification or attachments |
 
 ### Multiple accounts
 

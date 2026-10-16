@@ -7,7 +7,9 @@ import { securityPlugin } from "./plugins/security";
 import { summarizePlugin } from "./plugins/summarize";
 import { calendarPlugin } from "./plugins/calendar";
 import { notifyKeepPlugin } from "./plugins/notify-keep";
+import { archiveSilentPlugin } from "./plugins/archive-silent";
 import { isGmailAutoArchiveCategory } from "./gmail";
+import { applyLinearSilentArchiveOverride } from "./linear";
 import type {
   Channel,
   Plugin,
@@ -24,6 +26,7 @@ const ACTION_TO_PLUGIN: Record<RuleAction, Plugin> = {
   extract_and_archive: securityPlugin,
   calendar_and_archive: calendarPlugin,
   notify_keep: notifyKeepPlugin,
+  archive_silently: archiveSilentPlugin,
 };
 
 async function main() {
@@ -142,6 +145,17 @@ async function handleEmail(
 
     classification = applyGmailCategoryArchiveOverride(email, classification);
 
+    const linearClassification = applyLinearSilentArchiveOverride(
+      email,
+      classification
+    );
+    if (linearClassification !== classification) {
+      console.log(
+        `[${email.accountName}] Linear sender overrides ${classification.action}; archiving UID ${email.uid} silently`
+      );
+      classification = linearClassification;
+    }
+
     // Execute the appropriate plugin
     const plugin = ACTION_TO_PLUGIN[classification.action];
     if (!plugin) {
@@ -161,8 +175,13 @@ async function handleEmail(
       },
     });
 
-    // Forward email attachments (unless notify-keep already handled them)
-    if (classification.action !== "notify_keep" && email.attachments.length > 0) {
+    // Forward email attachments (unless notify-keep already handled them or
+    // the email is archived silently)
+    if (
+      classification.action !== "notify_keep" &&
+      classification.action !== "archive_silently" &&
+      email.attachments.length > 0
+    ) {
       const silent = isLowPriorityNotification(classification);
       for (const channel of channels) {
         for (const att of email.attachments) {
