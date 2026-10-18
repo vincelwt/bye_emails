@@ -57,6 +57,19 @@ function parseJsonResponse(text: string): any {
   return JSON.parse(cleaned);
 }
 
+// Plugins read fields off `extracted`, so it must always be an object even
+// when the LLM omits it or returns something else.
+export function normaliseExtracted(extracted: unknown): ExtractedData {
+  if (
+    typeof extracted !== "object" ||
+    extracted === null ||
+    Array.isArray(extracted)
+  ) {
+    return {};
+  }
+  return extracted as ExtractedData;
+}
+
 function fallbackClassification(email: ParsedEmail): Classification {
   const sender = email.from.name || email.from.address || "unknown sender";
   return {
@@ -118,7 +131,9 @@ export async function classifyEmail(
       rule: "needs_attention",
       action: "notify_keep",
       confidence: 0,
-      extracted: { brief: parsed.extracted?.brief ?? email.subject },
+      extracted: {
+        brief: normaliseExtracted(parsed.extracted).brief ?? email.subject,
+      },
     };
   }
 
@@ -126,7 +141,7 @@ export async function classifyEmail(
     rule: matchedRule.name,
     action: matchedRule.action,
     confidence: parsed.confidence ?? 0.5,
-    extracted: parsed.extracted as ExtractedData,
+    extracted: normaliseExtracted(parsed.extracted),
   };
 }
 
