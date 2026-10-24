@@ -159,6 +159,11 @@ export interface LlmConfig {
   api_key_env: string;
 }
 
+export interface JevConfig {
+  model: string;
+  api_key_env: string;
+}
+
 export interface TelegramConfig {
   bot_token_env: string;
   chat_id_env: string;
@@ -174,6 +179,7 @@ export interface CalendarConfig {
 
 export interface Config {
   llm: LlmConfig;
+  jev: JevConfig;
   accounts: ImapAccountConfig[];
   channels: {
     telegram?: TelegramConfig;

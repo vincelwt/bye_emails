@@ -27,6 +27,10 @@ export function resolveLlmApiKey(config: Config): string {
   return resolveEnv(config.llm.api_key_env);
 }
 
+export function resolveJevApiKey(config: Config): string {
+  return resolveEnv(config.jev.api_key_env);
+}
+
 export function resolveTelegramConfig(config: Config) {
   const tg = config.channels.telegram;
   if (!tg) return undefined;
@@ -78,10 +82,14 @@ export async function loadConfig(path: string): Promise<Config> {
     account.secure ??= true;
   }
 
-  config.llm.provider ??= "openai";
-  config.llm.model ??= "gpt-5.6-luna";
-  config.llm.summarize_model ??= "gpt-5.6-luna";
-  config.llm.api_key_env ??= "OPENAI_API_KEY";
+  config.llm.provider ??= "anthropic";
+  config.llm.model ??= "claude-haiku-5-5";
+  config.llm.summarize_model ??= "claude-haiku-5-5";
+  config.llm.api_key_env ??= "ANTHROPIC_API_KEY";
+
+  config.jev ??= { model: "jev-latest", api_key_env: "TYPESAFE_API_KEY" };
+  config.jev.model ??= "jev-latest";
+  config.jev.api_key_env ??= "TYPESAFE_API_KEY";
 
   return config;
 }

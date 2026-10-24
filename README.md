@@ -3,7 +3,7 @@
 A micro agent that watches your inbox so you don't have to. Important stuff goes straight to your Telegram — everything else is archived automatically.
 
 ```
-New email arrives → AI classifies it → Telegram notification → Auto-archived
+New email arrives → Jev picks a rule → Telegram notification → Auto-archived
                                               ↓
                           OTP codes extracted, travel added to calendar,
                           newsletters summarized, spam silently archived
@@ -13,12 +13,12 @@ New email arrives → AI classifies it → Telegram notification → Auto-archiv
 
 Email is a todo list that anyone can add to. Most of it doesn't need you. OTP codes, newsletters, booking confirmations, notifications — they just need to be acknowledged and archived.
 
-bye_emails connects to your inbox via IMAP, classifies every incoming email with an LLM, and handles it based on rules you define in plain English. You get a Telegram message with just the important bits. Your inbox stays empty.
+bye_emails connects to your inbox via IMAP. Jev decides which of your rules matches, and Haiku 5.5 pulls out codes, trip details, and summaries when the rule needs them. You get a Telegram message with just the important bits. Your inbox stays empty.
 
 ## Features
 
 - **Responsive monitoring** — IMAP IDLE with a fallback inbox scan so missed pushes are picked up quickly
-- **Smart triage** — deterministic sender policies for GitHub and Linear plus LLM classification using your natural language rules
+- **Smart triage** — GitHub and Linear are matched on the sender. Every other email is scored against your rules by Jev, and an unclear score stays in the inbox
 - **Operational filing** — Netdata monitoring alerts and Apple App Store / Google Play submission status changes are briefly notified and then archived
 - **OTP extraction** — security codes and action links pulled out and sent directly
 - **Newsletter summaries** — financial newsletters broken down by company with bull/bear thesis
@@ -35,7 +35,8 @@ bye_emails connects to your inbox via IMAP, classifies every incoming email with
 
 - [Bun](https://bun.sh)
 - A [Telegram bot](https://t.me/botfather)
-- An [OpenAI API key](https://platform.openai.com/api-keys)
+- A [TypeSafe API key](https://console.typesafe.ai/keys) for Jev
+- An [Anthropic API key](https://console.anthropic.com/) for Haiku 5.5
 - Gmail IMAP credentials. For Google Workspace, use an app password only if your admin settings allow it.
 
 ### Setup
@@ -50,7 +51,8 @@ cp config.example.yaml config.yaml
 Create a `.env`:
 
 ```env
-OPENAI_API_KEY=<openai-api-key>
+TYPESAFE_API_KEY=<typesafe-api-key>
+ANTHROPIC_API_KEY=<anthropic-api-key>
 GMAIL_USER=you@gmail.com
 GMAIL_APP_PASSWORD=<gmail-app-password>
 CLDSTART_GMAIL_USER=you@cldstart.com
@@ -69,7 +71,7 @@ bun run start
 
 ## Configuration
 
-Everything lives in `config.yaml`. Rules are plain English — the LLM uses them directly to classify emails.
+Everything lives in `config.yaml`. Rules are plain English. Jev reads each description and says how well the email matches it.
 
 ```yaml
 rules:
@@ -134,7 +136,7 @@ rules:
     action: notify_keep
 ```
 
-GitHub sender addresses (`@github.com` and its subdomains) are matched before LLM triage and always use `notify_and_archive`, even when a custom config omits the `github` rule.
+GitHub sender addresses (`@github.com` and its subdomains) are matched before Jev and always use `notify_and_archive`, even when a custom config omits the `github` rule.
 
 Linear sender addresses (`@linear.app` and its subdomains) are archived with `archive_silently` after triage: no Telegram message and no forwarded attachments. The one exception is email the classifier marks as `extract_and_archive`, so Linear login codes still arrive.
 
@@ -144,7 +146,7 @@ Linear sender addresses (`@linear.app` and its subdomains) are archived with `ar
 |--------|-------------|
 | `notify_and_archive` | Brief silent notification, auto-archive |
 | `extract_and_archive` | Extract OTP/links, notify, auto-archive |
-| `summarize_and_archive` | Detailed silent summary (smarter model), auto-archive |
+| `summarize_and_archive` | Detailed silent summary, auto-archive |
 | `calendar_and_archive` | Add to calendar via CalDAV (or attach .ics), auto-archive |
 | `notify_keep` | Full notification with Open + Archive buttons, stays in inbox |
 | `archive_silently` | Auto-archive with no notification or attachments |
@@ -247,7 +249,8 @@ dokku builder:set bye-emails selected dockerfile
 dokku proxy:disable bye-emails
 dokku checks:disable bye-emails
 dokku config:set bye-emails \
-  OPENAI_API_KEY=... \
+  TYPESAFE_API_KEY=... \
+  ANTHROPIC_API_KEY=... \
   GMAIL_USER=you@gmail.com \
   GMAIL_APP_PASSWORD=... \
   CLDSTART_GMAIL_USER=you@cldstart.com \
@@ -269,7 +272,7 @@ export const myPlugin: Plugin = {
   name: "my-plugin",
   async execute(ctx: PluginContext) {
     // ctx.email — parsed email with attachments
-    // ctx.classification — LLM result with extracted data
+    // ctx.classification — rule, confidence, and extracted fields
     // ctx.channels — send notifications
     // ctx.archiveEmail() — archive via IMAP
   },
@@ -286,7 +289,8 @@ Implement the `Channel` interface — `start()`, `stop()`, `send()`, `sendDocume
 
 - [Bun](https://bun.sh) runtime
 - [ImapFlow](https://github.com/postalsys/imapflow) for IMAP + IDLE
-- [pi-ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai) for LLM calls
+- [Jev](https://docs.typesafe.ai/) (`@typesafe-ai/sdk`) to choose the rule
+- [pi-ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai) for Haiku extraction and summaries
 - [tsdav](https://github.com/natelindev/tsdav) for CalDAV
 - Telegram Bot API (direct HTTP, no library)
 
