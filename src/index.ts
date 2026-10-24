@@ -1,4 +1,10 @@
-import { loadConfig, resolveAccountAuth, resolveTelegramConfig } from "./config";
+import {
+  loadConfig,
+  resolveAccountAuth,
+  resolveJevApiKey,
+  resolveLlmApiKey,
+  resolveTelegramConfig,
+} from "./config";
 import { ImapWatcher } from "./imap/watcher";
 import { classifyEmail } from "./triage/classifier";
 import { TelegramChannel } from "./channels/telegram";
@@ -34,6 +40,8 @@ async function main() {
   console.log(`Loading config from ${configPath}...`);
 
   const config = await loadConfig(configPath);
+  resolveLlmApiKey(config);
+  resolveJevApiKey(config);
   console.log(
     `Loaded config: ${config.accounts.length} account(s), ${config.rules.length} rule(s)`
   );

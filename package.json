@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@mariozechner/pi-ai": "^0.62.0",
+    "@typesafe-ai/sdk": "0.7.0",
     "imapflow": "^1.2.16",
     "mailparser": "^3.9.5",
     "tsdav": "^2.1.8",
